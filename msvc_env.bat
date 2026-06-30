@@ -6,15 +6,39 @@ rem Deliberately has NO `setlocal`: the sets must propagate to the caller. The
 rem caller is expected to have run `setlocal` already.
 rem
 rem Portable: locates vcvars64.bat via vswhere (any VS version/install path on
-rem GitHub Actions) with an edition-chain fallback (Community/Enterprise/...).
+rem GitHub Actions, which now ships VS 2026/v18) with an edition-chain fallback.
 rem vswhere is restricted to full IDE editions (Community/Enterprise/Professional)
 rem because the BuildTools SKU often omits the Windows SDK (no psapi.lib etc.).
 rem Override VCVARS / VCPKG_INSTALLED / VCPKG_TOOLS / PY via env.
+rem
+rem PATH handling: GHA's PATH is already ~6-8KB; vcvarsall prepends ~2KB. A plain
+rem `set "PATH=X;%PATH%"` AFTER vcvarsall exceeds cmd's 8191-char line limit
+rem ("The input line is too long"). So we prepend our dirs BEFORE vcvarsall (PATH
+rem is shorter then, and vcvarsall handles a long PATH internally), and we do NOT
+rem touch PATH after vcvarsall. meson finds pkg-config via the PKG_CONFIG env var
+rem (set to the full exe path) instead of relying on PATH ordering.
 rem
 rem Triplet: x64-windows-static-md  (static GMP/MPFR + dynamic /MD CRT).
 rem Static libs + dynamic CRT matches the Rust consumer's /MD -- no CRT
 rem mismatch, no GMP/MPFR DLL deps at runtime. (x64-windows-static is /MT and
 rem would mismatch.)
+
+rem --- vcpkg static-md install root + tools (overridable) ---
+if not defined VCPKG_INSTALLED set "VCPKG_INSTALLED=F:\Repos\vcpkg\installed\x64-windows-static-md"
+if not defined VCPKG_TOOLS      set "VCPKG_TOOLS=F:\Repos\vcpkg\installed\x64-windows\tools\pkgconf"
+if not defined PY              set "PY=C:\Users\B\AppData\Local\Programs\Python\Python311\Scripts"
+
+rem vcpkg ships pkgconf.exe; meson (via PKG_CONFIG env) wants pkg-config.exe.
+if not exist "%VCPKG_TOOLS%\pkg-config.exe" copy "%VCPKG_TOOLS%\pkgconf.exe" "%VCPKG_TOOLS%\pkg-config.exe" >nul 2>nul
+
+rem --- prepend our tool dirs to PATH BEFORE vcvarsall (see header comment) ---
+rem PATH is ~6KB on GHA / short on a dev box here, so this set stays <8KB. vcvarsall
+rem will then prepend its own dirs; our entries remain on PATH (after VS's).
+if exist "%PY%" ( set "PATH=%VCPKG_TOOLS%;%PY%;%PATH%" ) else ( set "PATH=%VCPKG_TOOLS%;%PATH%" )
+
+rem meson finds pkg-config via PKG_CONFIG (full path) -- no PATH dependence.
+set "PKG_CONFIG=%VCPKG_TOOLS%\pkg-config.exe"
+set "PKG_CONFIG_PATH=%VCPKG_INSTALLED%\lib\pkgconfig"
 
 rem --- locate vcvars64.bat: explicit VCVARS override > vswhere > edition chain ---
 rem vswhere output captured to a temp file (not a for/f backtick) because the
@@ -40,17 +64,7 @@ if errorlevel 1 (
   exit /b 1
 )
 
-rem --- vcpkg static-md install root + tools (overridable) ---
-if not defined VCPKG_INSTALLED set "VCPKG_INSTALLED=F:\Repos\vcpkg\installed\x64-windows-static-md"
-if not defined VCPKG_TOOLS      set "VCPKG_TOOLS=F:\Repos\vcpkg\installed\x64-windows\tools\pkgconf"
-if not defined PY              set "PY=C:\Users\B\AppData\Local\Programs\Python\Python311\Scripts"
-
-rem vcpkg ships pkgconf.exe; meson (via msvc_native.ini) looks up "pkg-config".
-if not exist "%VCPKG_TOOLS%\pkg-config.exe" copy "%VCPKG_TOOLS%\pkgconf.exe" "%VCPKG_TOOLS%\pkg-config.exe" >nul 2>nul
-
-if exist "%PY%" ( set "PATH=%VCPKG_TOOLS%;%PY%;%PATH%" ) else ( set "PATH=%VCPKG_TOOLS%;%PATH%" )
-set "PKG_CONFIG_PATH=%VCPKG_INSTALLED%\lib\pkgconfig"
-
-rem Shim headers: cl.exe reads INCLUDE for #include <...> and /FI lookups.
-rem msvc_compat.h (force-included by the native file) and unistd.h live here.
+rem --- shim headers (AFTER vcvarsall so they sit ahead of the VS include dirs) ---
+rem cl.exe reads INCLUDE for #include <...> and /FI lookups. INCLUDE is only
+rem ~1-2KB here (vs PATH), so this set is always <8KB -- safe.
 set "INCLUDE=%~dp0msvc_shim;%INCLUDE%"
