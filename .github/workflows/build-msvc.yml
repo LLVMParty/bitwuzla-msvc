@@ -23,10 +23,10 @@ jobs:
       - name: Cache vcpkg installed
         uses: actions/cache@v4
         with:
-          path: C:\vcpkg\installed
+          path: 'C:\vcpkg\installed'
           key: vcpkg-gmp-mpfr-pkgconf-staticmd-v1
 
-      - name: Install deps (vcpkg: gmp/mpfr static-md + pkgconf host tool)
+      - name: Install deps (gmp/mpfr static-md + pkgconf)
         shell: cmd
         run: |
           vcpkg install gmp mpfr --triplet x64-windows-static-md --overlay-triplets ci\triplets
@@ -40,8 +40,8 @@ jobs:
           call build_msvc.bat
           if errorlevel 1 exit /b 1
         env:
-          VCPKG_INSTALLED: C:\vcpkg\installed\x64-windows-static-md
-          VCPKG_TOOLS: C:\vcpkg\installed\x64-windows\tools\pkgconf
+          VCPKG_INSTALLED: 'C:\vcpkg\installed\x64-windows-static-md'
+          VCPKG_TOOLS: 'C:\vcpkg\installed\x64-windows\tools\pkgconf'
 
       - name: Assemble release zip
         shell: cmd
@@ -49,11 +49,11 @@ jobs:
           call assemble_msvc_zip.bat
           if errorlevel 1 exit /b 1
         env:
-          VCPKG: C:\vcpkg\installed\x64-windows-static-md
+          VCPKG: 'C:\vcpkg\installed\x64-windows-static-md'
 
       - name: Smoke-test the CLI
         shell: cmd
-        run: build_msvc\src\main\bitwuzla.exe --version
+        run: 'build_msvc\src\main\bitwuzla.exe --version'
 
       - uses: actions/upload-artifact@v4
         with:
