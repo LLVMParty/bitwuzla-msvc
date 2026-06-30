@@ -6,3 +6,16 @@ build/
 subprojects/*
 !/subprojects/packagefiles
 !subprojects/*.wrap
+
+# --- MSVC port build outputs (build_msvc.bat / assemble_msvc_zip.bat) ---
+/build_msvc*/
+/buildbat-test3/
+/msvc_pkg/
+/msvc_shim/bin/
+# local scratch / diagnostics
+/err*.txt
+/out*.txt
+/err_*.bin
+/out_*.bin
+/pl.bin
+/pl.err

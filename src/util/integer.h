@@ -15,6 +15,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <string>
 #include <type_traits>
 
 namespace bzla {

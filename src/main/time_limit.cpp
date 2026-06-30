@@ -1,12 +1,15 @@
 #include "main/time_limit.h"
 
-#include <pthread.h>  // Required for workaround
+#ifndef _MSC_VER
+#include <pthread.h>  // glibc <2.34 condvar workaround; irrelevant on Windows
+#endif
 
 #include <condition_variable>
 #include <cstdlib>
 #include <iostream>
 #include <mutex>
 #include <thread>
+#include <chrono>
 
 #include "bitwuzla/cpp/parser.h"
 
@@ -14,6 +17,7 @@ namespace bzla::main {
 
 // Workaround for condition variables in glibc < 2.34 to avoid segfault before
 // exiting: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58909
+#ifndef _MSC_VER
 void
 pthread_cond_var_bug_workaround()
 {
@@ -27,6 +31,7 @@ pthread_cond_var_bug_workaround()
   pthread_cond_timedwait(&c, &mt, &ts);
   pthread_cond_wait(&c, &mt);
 }
+#endif
 
 using namespace std::chrono_literals;
 
