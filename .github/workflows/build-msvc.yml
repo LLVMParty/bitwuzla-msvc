@@ -1,11 +1,19 @@
 name: Build MSVC static
 
-# Manually dispatched only -- no push/PR autobuild.
+# Manually dispatched only -- no push/PR autobuild. Builds the MSVC static
+# archive and publishes it to a GitHub release on this repo, where smt-server's
+# `bitwuzla` cargo feature (build.rs) fetches it:
+#   releases/download/<release_tag>/Bitwuzla-Win64-x86_64-msvc-static.zip
 "on":
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Release tag to publish the MSVC static zip under"
+        required: true
+        default: "bitwuzla-msvc-0.9.1"
 
 permissions:
-  contents: read
+  contents: write   # gh release create/upload writes releases + tags
 
 jobs:
   build:
@@ -80,3 +88,22 @@ jobs:
         env:
           VCPKG_INSTALLED: 'C:\vcpkg\installed\x64-windows-static-md'
           VCPKG_TOOLS: 'C:\vcpkg\installed\x64-windows\tools\pkgconf'
+
+      - name: Publish release asset
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          set -euo pipefail
+          asset="msvc_pkg/Bitwuzla-Win64-x86_64-msvc-static.zip"
+          if gh release view "$RELEASE_TAG" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $RELEASE_TAG exists; uploading asset (clobber)."
+            gh release upload "$RELEASE_TAG" -R "$GITHUB_REPOSITORY" --clobber "$asset"
+          else
+            echo "Creating release $RELEASE_TAG."
+            gh release create "$RELEASE_TAG" -R "$GITHUB_REPOSITORY" \
+              --title "Bitwuzla MSVC static ($RELEASE_TAG)" \
+              --notes "Prebuilt MSVC static archive rebuilt from Bitwuzla 0.9.1 source under cl.exe (x64-windows-static-md triplet, static GMP/MPFR, /MD CRT). Consumed by smt-server's bitwuzla cargo feature." \
+              "$asset"
+          fi
