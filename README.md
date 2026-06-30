@@ -2,8 +2,8 @@
 
 **This is a fork of [bitwuzla/bitwuzla](https://github.com/bitwuzla/bitwuzla).**
 It adds **only the glue needed to build Bitwuzla as a static MSVC library for
-Windows** — `cl.exe` with the `x64-windows-static-md` triplet (static GMP/MPFR
-+ dynamic `/MD` CRT). There are no functional changes to Bitwuzla itself; the
+Windows** — `cl.exe` with the `x64-windows-static-md` triplet (static GMP/MPFR + dynamic `/MD` CRT).
+There are no functional changes to Bitwuzla itself; the
 rest tracks upstream `main` via regular rebases.
 
 Upstream's Windows support is MSYS2/MinGW (GCC) only — it does not build with
