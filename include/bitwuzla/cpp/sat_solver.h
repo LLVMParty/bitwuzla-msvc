@@ -77,10 +77,7 @@ class SatSolver
 
   virtual void unphase(int32_t lit) { (void) lit; }
 
-  virtual void register_propagator(std::unique_ptr<bzla::sat::SatPropagator> sp)
-  {
-    (void) sp;
-  }
+  virtual void register_propagator(std::unique_ptr<bzla::sat::SatPropagator> sp);
 
   /**
    * Check satisfiability of current formula.

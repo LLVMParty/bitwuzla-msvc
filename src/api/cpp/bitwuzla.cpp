@@ -9,6 +9,7 @@
  */
 
 #include <bitwuzla/cpp/bitwuzla.h>
+#include <bitwuzla/cpp/sat_solver.h>
 
 #include <array>
 
@@ -24,6 +25,7 @@
 #include "printer/btor2_printer.h"
 #include "printer/exception.h"
 #include "printer/smt2_printer.h"
+#include "sat/sat_propagator.h"
 #include "sat/sat_solver_factory.h"
 #include "solver/fp/floating_point.h"
 #include "solver/fp/rounding_mode.h"
@@ -35,6 +37,14 @@
 namespace bitwuzla {
 
 /* -------------------------------------------------------------------------- */
+// Out-of-line so the default-discarding body destroys the unique_ptr where
+// SatPropagator is complete; MSVC's unique_ptr destructor static_asserts
+// against deleting an incomplete type (latent on libstdc++/libc++).
+void
+SatSolver::register_propagator(std::unique_ptr<bzla::sat::SatPropagator> sp)
+{
+  (void) sp;
+}
 
 namespace {
 
