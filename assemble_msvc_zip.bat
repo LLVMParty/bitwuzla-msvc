@@ -8,11 +8,12 @@ rem against the static-md GMP/MPFR headers, so direct __gmpz_*/mpfr_* symbols)
 rem plus the statically-linked GMP/MPFR (vcpkg x64-windows-static-md: static lib
 rem + dynamic /MD CRT, matching Rust's /MD -- no CRT mismatch, no DLLs).
 rem
-rem Run build_msvc.bat first.
+rem Run build_msvc.bat first. VCPKG defaults to the local vcpkg install; the CI
+rem workflow overrides it to C:\vcpkg\installed\x64-windows-static-md.
 
 set "BZ=%~dp0"
 set "BUILD=%BZ%build_msvc"
-set "VCPKG=F:\Repos\vcpkg\installed\x64-windows-static-md"
+if not defined VCPKG set "VCPKG=F:\Repos\vcpkg\installed\x64-windows-static-md"
 set "STAGE=%BZ%msvc_pkg\Bitwuzla-Win64-x86_64-msvc-static"
 
 if not exist "%BUILD%\src\libbitwuzla.a" (

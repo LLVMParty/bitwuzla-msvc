@@ -1,0 +1,59 @@
+name: Build MSVC static
+
+# Manually dispatched only -- no push/PR autobuild.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install meson/ninja
+        run: pip install meson ninja
+
+      - name: Cache vcpkg installed
+        uses: actions/cache@v4
+        with:
+          path: C:\vcpkg\installed
+          key: vcpkg-gmp-mpfr-pkgconf-staticmd-v1
+
+      - name: Install deps (vcpkg: gmp/mpfr static-md + pkgconf host tool)
+        shell: cmd
+        run: |
+          vcpkg install gmp mpfr --triplet x64-windows-static-md --overlay-triplets ci\triplets
+          if errorlevel 1 exit /b 1
+          vcpkg install pkgconf:x64-windows
+          if errorlevel 1 exit /b 1
+
+      - name: Build bitwuzla (lib + CLI)
+        shell: cmd
+        run: |
+          call build_msvc.bat
+          if errorlevel 1 exit /b 1
+        env:
+          VCPKG_INSTALLED: C:\vcpkg\installed\x64-windows-static-md
+          VCPKG_TOOLS: C:\vcpkg\installed\x64-windows\tools\pkgconf
+
+      - name: Assemble release zip
+        shell: cmd
+        run: |
+          call assemble_msvc_zip.bat
+          if errorlevel 1 exit /b 1
+        env:
+          VCPKG: C:\vcpkg\installed\x64-windows-static-md
+
+      - name: Smoke-test the CLI
+        shell: cmd
+        run: build_msvc\src\main\bitwuzla.exe --version
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Bitwuzla-Win64-x86_64-msvc-static
+          path: msvc_pkg/Bitwuzla-Win64-x86_64-msvc-static.zip
+          if-no-files-found: error
