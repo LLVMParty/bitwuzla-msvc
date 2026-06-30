@@ -21,13 +21,15 @@ jobs:
         run: pip install meson ninja
 
       - name: Cache vcpkg installed
+        id: vcpkg-cache
         uses: actions/cache@v4
-        if: always()
         with:
           path: 'C:\vcpkg\installed'
           key: vcpkg-gmp-mpfr-pkgconf-staticmd-v2-${{ hashFiles('ci/triplets/*') }}
+          save-always: true
 
       - name: Install deps (gmp/mpfr static-md + pkgconf)
+        if: steps.vcpkg-cache.outputs.cache-hit != 'true'
         shell: cmd
         run: |
           vcpkg install gmp mpfr --triplet x64-windows-static-md --overlay-triplets ci\triplets
