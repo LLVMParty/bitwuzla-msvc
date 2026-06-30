@@ -20,15 +20,15 @@ jobs:
       - name: Install meson/ninja
         run: pip install meson ninja
 
-      - name: Cache vcpkg installed
+      - name: Restore vcpkg installed
         id: vcpkg-cache
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: 'C:\vcpkg\installed'
-          key: vcpkg-gmp-mpfr-pkgconf-staticmd-v2-${{ hashFiles('ci/triplets/*') }}
-          save-always: true
+          key: vcpkg-gmp-mpfr-pkgconf-staticmd-v3-${{ hashFiles('ci/triplets/*') }}
 
       - name: Install deps (gmp/mpfr static-md + pkgconf)
+        id: install-deps
         if: steps.vcpkg-cache.outputs.cache-hit != 'true'
         shell: cmd
         run: |
@@ -36,6 +36,14 @@ jobs:
           if errorlevel 1 exit /b 1
           vcpkg install pkgconf:x64-windows
           if errorlevel 1 exit /b 1
+
+      - name: Save vcpkg installed
+        if: always() && steps.install-deps.outcome == 'success'
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: 'C:\vcpkg\installed'
+          key: vcpkg-gmp-mpfr-pkgconf-staticmd-v3-${{ hashFiles('ci/triplets/*') }}
 
       - name: Build bitwuzla (lib + CLI)
         shell: cmd
