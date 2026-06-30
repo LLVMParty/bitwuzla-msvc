@@ -24,7 +24,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: 'C:\vcpkg\installed'
-          key: vcpkg-gmp-mpfr-pkgconf-staticmd-v1
+          key: vcpkg-gmp-mpfr-pkgconf-staticmd-v2-${{ hashFiles('ci/triplets/*') }}
 
       - name: Install deps (gmp/mpfr static-md + pkgconf)
         shell: cmd
