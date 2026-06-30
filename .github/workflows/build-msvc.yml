@@ -1,7 +1,7 @@
 name: Build MSVC static
 
 # Manually dispatched only -- no push/PR autobuild.
-on:
+"on":
   workflow_dispatch: {}
 
 permissions:
